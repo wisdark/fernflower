@@ -1,4 +1,4 @@
-// Copyright 2000-2022 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
+// Copyright 2000-2023 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package org.jetbrains.java.decompiler;
 
 import org.jetbrains.java.decompiler.main.DecompilerContext;
@@ -39,7 +39,10 @@ public class SingleClassesTest {
     fixture.setUp(Map.of(IFernflowerPreferences.BYTECODE_SOURCE_MAPPING, "1",
                          IFernflowerPreferences.DUMP_ORIGINAL_LINES, "1",
                          IFernflowerPreferences.IGNORE_INVALID_BYTECODE, "1",
-                         IFernflowerPreferences.VERIFY_ANONYMOUS_CLASSES, "1"));
+                         IFernflowerPreferences.VERIFY_ANONYMOUS_CLASSES, "1",
+                         IFernflowerPreferences.CONVERT_PATTERN_SWITCH, "1",
+                         IFernflowerPreferences.CONVERT_RECORD_PATTERN, "1"
+    ));
   }
 
   @After
@@ -145,6 +148,23 @@ public class SingleClassesTest {
   @Test public void testIntVarMerge() { doTest("pkg/TestIntVarMerge"); }
   @Test public void testSwitchOnStringsJavac() { doTest("pkg/TestSwitchOnStringsJavac"); }
   @Test public void testSwitchOnStringsEcj() { doTest("pkg/TestSwitchOnStringsEcj"); }
+  @Test public void testSwitchRules() { doTest("pkg/TestSwitchRules"); }
+  @Test public void testSwitchSimpleReferencesJavac() { doTest("pkg/TestSwitchSimpleReferencesJavac"); }
+  @Test public void testSwitchClassReferencesJavac() { doTest("pkg/TestSwitchClassReferencesJavac"); }
+  @Test public void testSwitchClassReferencesEcj() { doTest("pkg/TestSwitchClassReferencesEcj"); }
+  @Test public void testSwitchClassReferencesFastExitJavac() { doTest("pkg/TestSwitchClassReferencesFastExitJavac"); }
+  @Test public void testSwitchClassReferencesFastExitEcj() { doTest("pkg/TestSwitchClassReferencesFastExitEcj"); }
+  @Test public void testSwitchGuardedJavac() { doTest("pkg/TestSwitchGuardedJavac"); }
+  @Test public void testSwitchGuarded2Javac() { doTest("pkg/TestSwitchGuarded2Javac"); }
+  @Test public void testSwitchGuardedEcj() { doTest("pkg/TestSwitchGuardedEcj"); }
+
+  //ecj doesn't support here, because it produces code with unnecessary assignments,
+  //which can confuse decompiler with ordinary ones
+  @Test public void testSimpleInstanceOfRecordPatternJavac() { doTest("pkg/TestSimpleInstanceOfRecordPatternJavac"); }
+  @Test public void testComplexInstanceOfRecordPatternJavac() { doTest("pkg/TestComplexInstanceOfRecordPatternJavac"); }
+  @Test public void testSwitchWithDeconstructionsWithoutNestedJavac() { doTest("pkg/TestSwitchWithDeconstructionsWithoutNestedJavac"); }
+  @Test public void testSwitchNestedDeconstructionJavac() { doTest("pkg/TestSwitchNestedDeconstructionsJavac"); }
+  @Test public void testSwitchWrapReturnJavac() { doTest("pkg/TestSwitchWrapReturnJavac"); }
 
   // TODO: fix all below
   //@Test public void testUnionType() { doTest("pkg/TestUnionType"); }
@@ -222,6 +242,11 @@ public class SingleClassesTest {
   @Test public void testInstanceofWithPattern() {
     doTest("patterns/TestInstanceofWithPattern");
   }
+  //it is not actual expressions, but convert expressions into statements
+  @Test public void testSwitchPatternWithExpression() {
+    doTest("patterns/TestSwitchPatternWithExpression");
+  }
+
   @Test public void testInstanceofVarNotSupported() {
     // the bytecode version of this test data doesn't support patterns in `instanceof`, so no modifications regarding that are applied
     doTest("patterns/TestInstanceofPatternNotSupported");
@@ -229,6 +254,13 @@ public class SingleClassesTest {
 
   @Test(expected = ClassFormatException.class)
   public void testUnsupportedConstantPoolEntry() { doTest("java11/TestUnsupportedConstantPoolEntry"); }
+
+  @Test public void testSwitchOnStatic() { doTest("pkg/SwitchOnStatic"); }
+
+  @Test public void testTryToPreserveCast() { doTest("pkg/TryToPreserveCast"); }
+
+  @Test public void testPreserveAssignmentToRecord() { doTest("pkg/PreserveAssignmentToRecord"); }
+  @Test public void testPreserveAssignmentToRecord2() { doTest("pkg/PreserveAssignmentToRecord2"); }
 
   private void doTest(String testFile, String... companionFiles) {
     var decompiler = fixture.getDecompiler();
@@ -257,7 +289,7 @@ public class SingleClassesTest {
     assertFilesEqual(referenceFile, decompiledFile);
   }
 
-  private static List<Path> collectClasses(Path classFile) {
+  static List<Path> collectClasses(Path classFile) {
     var files = new ArrayList<Path>();
     files.add(classFile);
 
